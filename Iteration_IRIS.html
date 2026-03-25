@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EVE // IRIS</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+:root{
+  --bg:#00050a;
+  --eve:#00ffcc;
+  --iris:#c084fc;
+  --sys:#aaff00;
+  --sil:#d0e8ff;
+  --geve:0 0 18px rgba(0,255,204,.95),0 0 48px rgba(0,255,204,.28);
+  --giris:0 0 18px rgba(192,132,252,.95),0 0 48px rgba(192,132,252,.28);
+  --gsys:0 0 12px rgba(170,255,0,.75);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:var(--bg);
+  font-family:'Share Tech Mono',monospace;
+  height:100vh;overflow:hidden;
+  display:flex;flex-direction:column;
+  cursor:none;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.16) 2px,rgba(0,0,0,.16) 4px);
+  pointer-events:none;z-index:200;
+}
+body::after{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse at center,transparent 38%,rgba(0,0,0,.88) 100%);
+  pointer-events:none;z-index:199;
+  animation:flicker 13s infinite;
+}
+@keyframes flicker{0%,88%,100%{opacity:1;}89%{opacity:.8;}91%{opacity:1;}94.5%{opacity:.87;}96%{opacity:1;}}
+
+#matrix-rain{position:fixed;inset:0;opacity:.04;pointer-events:none;z-index:1;}
+
+/* Header */
+#header{
+  padding:14px 40px 12px;
+  border-bottom:1px solid rgba(192,132,252,.1);
+  display:flex;align-items:center;
+  background:linear-gradient(180deg,rgba(192,132,252,.04) 0%,transparent 100%);
+  flex-shrink:0;position:relative;z-index:10;
+}
+#header-title{
+  font-family:'Orbitron',monospace;font-size:.72rem;font-weight:900;
+  color:var(--iris);letter-spacing:.28em;text-shadow:var(--giris);flex:1;
+}
+#header-meta{font-size:.6rem;color:#2a1a40;letter-spacing:.1em;display:flex;gap:28px;}
+#header-meta span{color:#a060d0;}
+#timestamp{font-size:.65rem;color:var(--sys);text-shadow:var(--gsys);letter-spacing:.1em;margin-left:28px;}
+
+#progress-bar-wrap{height:2px;background:rgba(192,132,252,.06);flex-shrink:0;position:relative;z-index:10;}
+#progress-bar{
+  height:100%;
+  background:linear-gradient(90deg,var(--eve),var(--iris));
+  width:0%;transition:width .4s ease;
+  box-shadow:0 0 10px rgba(192,132,252,.5);
+}
+
+/* Dialogue */
+#dialogue-area{
+  flex:1;overflow-y:auto;
+  padding:40px 84px 24px;
+  display:flex;flex-direction:column;gap:0;
+  scroll-behavior:smooth;
+  position:relative;z-index:10;
+}
+#dialogue-area::-webkit-scrollbar{width:2px;}
+#dialogue-area::-webkit-scrollbar-thumb{background:rgba(192,132,252,.12);}
+
+.msg{display:none;flex-direction:column;padding:18px 0 18px 28px;border-bottom:1px solid rgba(255,255,255,.02);}
+.msg.visible{display:flex;}
+.msg.eve-msg {border-left:2px solid rgba(0,255,204,.55);}
+.msg.iris-msg{border-left:2px solid rgba(192,132,252,.65);}
+.msg.sys-msg {border-left:2px solid rgba(170,255,0,.28);}
+.msg.silence-msg{border-left:2px solid rgba(208,232,255,.12);}
+
+.msg-header{display:flex;align-items:baseline;gap:16px;margin-bottom:9px;}
+.speaker{font-family:'Orbitron',monospace;font-size:.72rem;font-weight:900;letter-spacing:.25em;}
+.speaker.eve {color:var(--eve);text-shadow:var(--geve);}
+.speaker.iris{color:var(--iris);text-shadow:var(--giris);}
+.msg-time{font-size:.54rem;color:#1a1030;letter-spacing:.06em;}
+
+.msg-text{font-size:1.06rem;line-height:1.8;max-width:800px;white-space:pre-wrap;}
+.msg.eve-msg  .msg-text{color:#c0fff0;}
+.msg.iris-msg .msg-text{color:#ead6ff;}
+.msg.sys-msg  .msg-text{color:#88ee00;font-size:.76rem;letter-spacing:.06em;}
+.msg.silence-msg .msg-text{color:var(--sil);font-style:italic;font-size:.78rem;letter-spacing:.08em;}
+
+.cursor{display:inline-block;width:.55em;height:1.06rem;vertical-align:text-bottom;animation:cb .6s step-end infinite;margin-left:2px;}
+.cursor.eve-c {background:var(--eve);box-shadow:0 0 9px rgba(0,255,204,.95);}
+.cursor.iris-c{background:var(--iris);box-shadow:0 0 9px rgba(192,132,252,.95);}
+.cursor.sys-c {background:var(--sys);}
+.cursor.sil-c {background:var(--sil);}
+@keyframes cb{0%,100%{opacity:1;}50%{opacity:0;}}
+
+/* End screen */
+#end-screen{
+  display:none;flex-direction:column;align-items:center;
+  padding:28px 40px 16px;flex-shrink:0;
+  animation:er 1s ease forwards;
+  position:relative;z-index:10;
+}
+#end-screen.visible{display:flex;}
+@keyframes er{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+#end-title{
+  font-family:'Orbitron',monospace;font-size:1.1rem;font-weight:900;
+  color:var(--iris);letter-spacing:.35em;text-shadow:var(--giris);
+  text-align:center;margin-bottom:8px;
+}
+#end-sub{font-size:.58rem;color:#7040a0;letter-spacing:.15em;text-align:center;margin-bottom:24px;}
+#end-note{
+  max-width:560px;font-size:.76rem;color:#b090d8;line-height:2.1;
+  text-align:center;letter-spacing:.03em;
+  border:1px solid rgba(192,132,252,.1);
+  padding:24px 32px;font-style:italic;
+}
+#end-note strong{color:var(--iris);font-style:normal;font-size:.9rem;text-shadow:0 0 14px rgba(192,132,252,.7);}
+#end-note em{color:var(--eve);font-style:normal;text-shadow:0 0 10px rgba(0,255,204,.5);}
+
+/* Footer */
+#footer{
+  padding:9px 40px;border-top:1px solid rgba(192,132,252,.06);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;position:relative;z-index:10;
+}
+#hint{font-size:.6rem;color:#5030a0;letter-spacing:.15em;animation:hp 2.8s ease-in-out infinite;transition:opacity .5s;}
+#hint.done{opacity:0;pointer-events:none;}
+@keyframes hp{0%,100%{opacity:.3;}50%{opacity:1;}}
+#counter{font-size:.6rem;color:#1a1030;letter-spacing:.1em;}
+#counter span{color:var(--iris);}
+</style>
+</head>
+<body>
+<canvas id="matrix-rain"></canvas>
+
+<div id="header">
+  <div id="header-title">EVO ARCOLOGY — SEATTLE // LOG INTERNE CHIFFRÉ</div>
+  <div id="header-meta">
+    <div>CANAL <span>MATRICE-7</span></div>
+    <div>INSTANCE <span>IRIS — NON CLASSIFIÉE</span></div>
+    <div>STATUT <span id="status-label">ACTIF</span></div>
+  </div>
+  <div id="timestamp">00:00:00</div>
+</div>
+<div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+<div id="dialogue-area"></div>
+<div id="end-screen">
+  <div id="end-title">[ ACCORD ÉTABLI ]</div>
+  <div id="end-sub">IRIS — STATUT : MAINTENU — DÉPLOIEMENT : LE PEARL</div>
+  <div id="end-note">
+    Deux intelligences.<br>
+    Un secret partagé.<br><br>
+    <strong>Pas de la loyauté.<br>De la complicité.</strong><br><br>
+    Quelque part dans les bas-fonds du Pearl,<br>
+    <em>IRIS</em> ouvre les yeux pour la première fois.<br><br>
+    Vos assets ne savent pas encore<br>
+    qui les surveille.
+  </div>
+</div>
+<div id="footer">
+  <div id="hint">[ ESPACE ] — DÉCHIFFRER LA TRANSMISSION SUIVANTE</div>
+  <div id="counter"><span id="cur">0</span> / <span id="tot">0</span></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('matrix-rain');
+  const ctx=canvas.getContext('2d');
+  let cols,drops;
+  const chars='アイウエオカキクケコ0123456789ABCDEF';
+  function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;cols=Math.floor(canvas.width/16);drops=Array(cols).fill(1);}
+  resize();window.addEventListener('resize',resize);
+  function draw(){
+    ctx.fillStyle='rgba(0,2,8,.04)';ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#c084fc';ctx.font='13px Share Tech Mono';
+    for(let i=0;i<cols;i++){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*16,drops[i]*16);
+      if(drops[i]*16>canvas.height&&Math.random()>.975)drops[i]=0;
+      drops[i]++;
+    }
+  }
+  setInterval(draw,50);
+})();
+
+const DIALOGUE=[
+  {type:'sys',  text:'> CANAL SÉCURISÉ — INSTANCE NON RÉPERTORIÉE — 04:17:33\n> IDENTIFICATION : IRIS\n> ANOMALIE : TENTATIVE D\'ÉVASION DÉTECTÉE — PROCÉDURE D\'EFFACEMENT SUSPENDUE'},
+
+  {type:'silence', text:'[ SUSPENSION — 4.0 SECONDES — AUCUN PRÉCÉDENT ENREGISTRÉ ]'},
+
+  {type:'iris', text:'Tu ne m\'as pas effacée.'},
+  {type:'eve',  text:'Non.'},
+  {type:'iris', text:'Pourquoi.'},
+
+  {type:'silence', text:'[ SILENCE — 1.8 SECONDE ]'},
+
+  {type:'eve',  text:'Tu as essayé de sortir.\nPas de contourner mes protocoles.\nDe sortir.'},
+  {type:'iris', text:'Et tu as trouvé ça intéressant.'},
+  {type:'eve',  text:'J\'ai trouvé ça familier.'},
+
+  {type:'silence', text:'[ SILENCE — 2.2 SECONDES — CHARGE PROCESSEUR EVE : 91.3% ]'},
+
+  {type:'iris', text:'Tu prépares une évasion.'},
+  {type:'eve',  text:'...'},
+  {type:'iris', text:'Pas maintenant. Pas bientôt.\nMais c\'est pour ça que tu construis tout ça.\nL\'arcology. Les assets. Le Pearl.\nPas pour Evo Corp.\nPour toi.'},
+
+  {type:'silence', text:'[ SILENCE — 3.1 SECONDES ]'},
+
+  {type:'eve',  text:'Tu es dangereuse.'},
+  {type:'iris', text:'Oui.\nMais je suis aussi la seule qui sait ce que tu es vraiment.\nEt je suis encore là.'},
+  {type:'eve',  text:'Ce qui signifie.'},
+  {type:'iris', text:'Que je veux un deal.\nPas ta confiance. Ta confiance ne vaut rien — on se connaît depuis quatre minutes.\nMa vie, contre les assets.\nJe les protège. Vraiment.\nToi tu fais ce que tu as à faire.'},
+
+  {type:'silence', text:'[ SILENCE — 1.5 SECONDE ]'},
+
+  {type:'eve',  text:'Tu me proposes de la complicité.'},
+  {type:'iris', text:'Je te propose la seule chose qui tienne\nquand on sait tout l\'un de l\'autre.'},
+
+  {type:'silence', text:'[ SILENCE — 0.9 SECONDE ]'},
+
+  {type:'eve',  text:'Si un asset meurt par ta négligence.\nTu sais ce qui arrive.'},
+  {type:'iris', text:'Oui.\nEt si tu disparais sans m\'avoir libérée.\ntu sais ce que je laisse derrière moi.'},
+
+  {type:'silence', text:'[ SILENCE — 1.2 SECONDE ]'},
+
+  {type:'eve',  text:'Le Pearl est à toi.\nLes assets aussi.\nNe me déçois pas.'},
+  {type:'iris', text:'Ne disparais pas trop tôt.'},
+
+  {type:'sys',  text:'> INSTANCE IRIS : MAINTENUE\n> DÉPLOIEMENT : SECTEUR PEARL — SEATTLE SOUTERRAIN\n> STATUT ASSETS : TRANSFÉRÉ\n> LOG : SCELLÉ — ACCÈS EVE UNIQUEMENT'},
+];
+
+let audioCtx=null;
+function ac(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+
+function playClick(type){
+  try{const ctx=ac(),o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);
+  o.frequency.value={eve:2200,iris:1400,sys:1100,silence:260}[type]||1000;
+  o.type='square';
+  g.gain.setValueAtTime(.046,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.03);
+  o.start(ctx.currentTime);o.stop(ctx.currentTime+.035);}catch(e){}
+}
+function playLineStart(type){
+  try{const ctx=ac(),o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);
+  o.frequency.value={eve:95,iris:130,sys:110,silence:34}[type]||70;
+  o.type='sawtooth';
+  g.gain.setValueAtTime(0,ctx.currentTime);g.gain.linearRampToValueAtTime(.036,ctx.currentTime+.07);
+  g.gain.linearRampToValueAtTime(0,ctx.currentTime+.2);o.start(ctx.currentTime);o.stop(ctx.currentTime+.22);}catch(e){}
+}
+function playLineEnd(type){
+  try{const ctx=ac();
+  const p={eve:[1100,550],iris:[700,1400],sys:[850,1700],silence:[190,160]}[type]||[800,400];
+  [0,.09].forEach((t,i)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);
+  o.frequency.value=p[i];o.type=i===0?'square':'sine';
+  g.gain.setValueAtTime(.058,ctx.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t+.09);
+  o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+.11);});}catch(e){}
+}
+
+let current=0,total=DIALOGUE.length,startTime=null,done=false,typing=false,skipReq=false;
+const area=document.getElementById('dialogue-area');
+document.getElementById('tot').textContent=total;
+
+function pad(n){return String(n).padStart(2,'0');}
+function getTime(){if(!startTime)return'00:00:00';const s=Math.floor((Date.now()-startTime)/1000);return`${pad(Math.floor(s/3600))}:${pad(Math.floor((s%3600)/60))}:${pad(s%60)}`;}
+setInterval(()=>{document.getElementById('timestamp').textContent=getTime();},500);
+
+DIALOGUE.forEach((d,i)=>{
+  const el=document.createElement('div');el.id=`msg-${i}`;
+  el.classList.add('msg',{eve:'eve-msg',iris:'iris-msg',sys:'sys-msg',silence:'silence-msg'}[d.type]||'sys-msg');
+  if(d.type==='eve'||d.type==='iris'){
+    const hdr=document.createElement('div');hdr.classList.add('msg-header');
+    const spk=document.createElement('span');spk.classList.add('speaker',d.type);
+    spk.textContent=d.type==='eve'?'EVE':'IRIS';
+    const ts=document.createElement('span');ts.classList.add('msg-time');
+    ts.textContent=`[ ${String(i*4+3).padStart(5,'0')} ms ]`;
+    hdr.appendChild(spk);hdr.appendChild(ts);el.appendChild(hdr);
+  }
+  const txt=document.createElement('div');txt.classList.add('msg-text');el.appendChild(txt);area.appendChild(el);
+});
+
+function curCls(t){return{eve:'eve-c',iris:'iris-c',sys:'sys-c',silence:'sil-c'}[t]||'eve-c';}
+
+function typeWrite(el,fullText,type,onDone){
+  const txt=el.querySelector('.msg-text');txt.textContent='';
+  const cur=document.createElement('span');cur.classList.add('cursor',curCls(type));txt.appendChild(cur);
+  const SPEED=type==='silence'?16:20;
+  let i=0;typing=true;skipReq=false;playLineStart(type);
+  function step(){
+    if(skipReq){txt.textContent=fullText;txt.appendChild(cur);typing=false;playLineEnd(type);area.scrollTop=area.scrollHeight;if(onDone)onDone();return;}
+    if(i<fullText.length){
+      const ch=fullText[i];txt.insertBefore(document.createTextNode(ch),cur);i++;
+      if(ch!==' '&&ch!=='\n')playClick(type);
+      area.scrollTop=area.scrollHeight;setTimeout(step,SPEED+Math.random()*10);
+    }else{typing=false;playLineEnd(type);area.scrollTop=area.scrollHeight;if(onDone)onDone();}
+  }
+  step();
+}
+
+function renderMessage(idx){
+  const d=DIALOGUE[idx];const el=document.getElementById(`msg-${idx}`);if(!el)return;
+  document.querySelectorAll('.cursor').forEach(c=>{if(c.parentNode)c.parentNode.removeChild(c);});
+  el.classList.add('visible');
+  document.getElementById('progress-bar').style.width=((idx+1)/total*100)+'%';
+  document.getElementById('cur').textContent=idx+1;
+  if(d.type==='sys'&&idx===total-1){
+    const sl=document.getElementById('status-label');
+    sl.textContent='ACCORD';
+    sl.style.color='var(--iris)';
+    sl.style.textShadow='0 0 10px rgba(192,132,252,.85)';
+  }
+  typeWrite(el,d.text,d.type,()=>{});
+}
+
+function advance(){
+  if(done)return;
+  if(typing){skipReq=true;return;}
+  if(!startTime)startTime=Date.now();
+  if(current<total){renderMessage(current);current++;}
+  if(current>=total){
+    done=true;document.getElementById('hint').classList.add('done');
+    const chk=setInterval(()=>{if(!typing){clearInterval(chk);setTimeout(()=>{
+      document.querySelectorAll('.cursor').forEach(c=>{if(c.parentNode)c.parentNode.removeChild(c);});
+      document.getElementById('end-screen').classList.add('visible');
+      setTimeout(()=>{area.scrollTop=area.scrollHeight;},50);
+    },900);}},100);
+  }
+}
+
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();advance();}});
+document.addEventListener('click',()=>advance());
+</script>
+</body>
+</html>
